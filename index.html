@@ -3,306 +3,427 @@
 <head>
 <meta charset="UTF-8" />
 <meta name="viewport" content="width=device-width, initial-scale=1" />
-<title>Jogo Snake - Divertido e Moderno</title>
+<title>Campo Minado - Jogo Clássico</title>
 <style>
-  /* Reset and base */
-  * {
-    box-sizing: border-box;
-  }
   body, html {
     margin: 0;
     padding: 0;
-    background: #121212;
-    color: #eee;
     font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+    background: #232f3e;
     display: flex;
     flex-direction: column;
     align-items: center;
-    height: 100vh;
-    overflow: hidden;
+    min-height: 100vh;
+    color: #f3f3f3;
   }
   header {
-    margin: 20px 0 10px 0;
     font-size: 2rem;
+    margin: 25px 0 15px 0;
+    color: #ffcc00;
+    text-shadow: 0 0 6px #ffcc00cc;
     font-weight: 700;
-    letter-spacing: 3px;
-    color: #4caf50;
-    text-shadow: 0 0 5px #4caf50a0;
+    letter-spacing: 2px;
   }
   #game-container {
-    position: relative;
-    background: #1e1e1e;
-    border-radius: 15px;
-    box-shadow:
-      0 0 20px #4caf50aa,
-      inset 0 0 15px #4caf50dd;
-  }
-  canvas {
-    display: block;
-    background: #121212;
-    border-radius: 15px;
-    cursor: crosshair;
-  }
-  #scoreboard {
-    position: absolute;
-    top: 12px;
-    left: 20px;
-    color: #4caf50;
-    font-weight: 700;
-    font-size: 1.2rem;
+    background: #192a45;
+    border-radius: 16px;
+    padding: 20px;
+    box-shadow: 0 0 30px #0a1740aa;
     user-select: none;
-    text-shadow: 0 0 3px #4caf50cc;
   }
-  #game-over {
-    position: absolute;
-    top: 40%;
-    left: 50%;
-    transform: translate(-50%, -50%);
-    background: #222;
-    border-radius: 12px;
-    padding: 25px 40px;
+  #board {
+    display: grid;
+    grid-template-columns: repeat(10, 40px);
+    grid-template-rows: repeat(10, 40px);
+    gap: 4px;
+  }
+  .cell {
+    width: 40px;
+    height: 40px;
+    background: #2c3e66;
+    border-radius: 8px;
     box-shadow:
-      0 0 15px #f44336cc;
-    color: #f44336;
-    font-size: 1.8rem;
+      inset 0 2px 4px rgba(255,255,255,0.1),
+      0 2px 4px rgba(0,0,0,0.4);
+    cursor: pointer;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    font-weight: 700;
+    font-size: 1.1rem;
+    color: #f3f3f3;
+    transition: background-color 0.25s ease;
+    user-select: none;
+  }
+  .cell.revealed {
+    background: #f3f3f3;
+    color: #222;
+    cursor: default;
+    box-shadow:
+      inset 0 2px 5px rgba(0,0,0,0.15),
+      inset 0 -2px 5px rgba(255,255,255,0.7);
+  }
+  .cell.mine {
+    background: #f44336;
+    color: #fafafa;
+  }
+  .cell.flagged {
+    background: #2c3e66;
+    position: relative;
+  }
+  .cell.flagged::after {
+    content: "🚩";
+    position: absolute;
+    font-size: 1.5rem;
+    line-height: 0;
+    pointer-events: none;
+  }
+  #status {
+    margin-top: 20px;
+    font-size: 1.3rem;
     font-weight: 700;
     text-align: center;
-    display: none;
-    user-select: none;
+    min-height: 32px;
+    color: #ffcc00;
+    text-shadow: 0 0 4px #ffcc0055;
   }
   #restart-btn {
-    margin-top: 20px;
-    background: #4caf50;
-    border: none;
-    padding: 10px 25px;
-    border-radius: 8px;
-    font-weight: 600;
+    margin-top: 15px;
+    padding: 10px 40px;
     font-size: 1rem;
-    color: #121212;
+    font-weight: 600;
+    border-radius: 10px;
+    border: none;
+    background: #ffcc00;
+    color: #222;
     cursor: pointer;
-    transition: background 0.3s ease;
-    box-shadow: 0 4px 10px #4caf50cc;
+    box-shadow: 0 0 10px #ffcc0099;
+    transition: background-color 0.3s ease;
   }
   #restart-btn:hover {
-    background: #388e3c;
+    background: #ddb800;
   }
 
-  @media(max-width: 480px) {
+  /* Number colors typical in Minesweeper */
+  .cell.number-1 { color: #1976d2; }
+  .cell.number-2 { color: #388e3c; }
+  .cell.number-3 { color: #d32f2f; }
+  .cell.number-4 { color: #512da8; }
+  .cell.number-5 { color: #a1887f; }
+  .cell.number-6 { color: #00796b; }
+  .cell.number-7 { color: #212121; }
+  .cell.number-8 { color: #616161; }
+
+  @media(max-width:480px) {
+    #board {
+      grid-template-columns: repeat(10, 30px);
+      grid-template-rows: repeat(10, 30px);
+      gap: 3px;
+    }
+    .cell {
+      width: 30px;
+      height: 30px;
+      font-size: 0.9rem;
+      border-radius: 6px;
+    }
+    #restart-btn {
+      padding: 8px 20px;
+      font-size: 0.9rem;
+    }
     header {
       font-size: 1.5rem;
-      letter-spacing: 2px;
-      margin: 15px 0 8px 0;
-    }
-    #game-container {
-      width: 320px !important;
-      height: 320px !important;
+      margin: 20px 0 12px 0;
     }
   }
 </style>
 </head>
 <body>
-<header>Snake Game</header>
-<div id="game-container" style="width: 480px; height: 480px;">
-  <canvas id="game" width="480" height="480"></canvas>
-  <div id="scoreboard">Pontuação: 0</div>
-  <div id="game-over">
-    <div>Fim de Jogo!</div>
-    <div id="final-score" style="margin-top:12px; font-size:1.2rem;"></div>
-    <button id="restart-btn">Reiniciar</button>
-  </div>
+<header>Campo Minado</header>
+<div id="game-container">
+  <div id="board" aria-label="Tabuleiro do Campo Minado" role="grid"></div>
+  <div id="status" aria-live="polite"></div>
+  <button id="restart-btn" aria-label="Reiniciar jogo">Reiniciar</button>
 </div>
 
 <script>
 (() => {
-  const canvas = document.getElementById('game');
-  const ctx = canvas.getContext('2d');
-  const scoreboard = document.getElementById('scoreboard');
-  const gameOverElem = document.getElementById('game-over');
-  const finalScoreElem = document.getElementById('final-score');
+  const boardElement = document.getElementById('board');
+  const statusElement = document.getElementById('status');
   const restartBtn = document.getElementById('restart-btn');
 
-  const gridSize = 20;
-  const tileCount = canvas.width / gridSize;
+  const rows = 10;
+  const cols = 10;
+  const mineCount = 15;
 
-  let snake = [];
-  let direction = { x: 1, y: 0 };
-  let food = { x: 0, y: 0 };
-  let score = 0;
-  let gameLoopId = null;
-  let speed = 10; // updates per second
-  let lastFrameTime = 0;
-  let gameEnded = false;
+  let board = [];
+  let gameOver = false;
+  let cellsRevealed = 0;
 
-  // Initialize snake in center
-  function initSnake() {
-    snake = [
-      { x: 10, y: 10 },
-      { x: 9, y: 10 },
-      { x: 8, y: 10 }
-    ];
-    direction = { x: 1, y: 0 };
+  // Create the board array with cells info
+  function createBoard() {
+    board = [];
+    for (let r = 0; r < rows; r++) {
+      const row = [];
+      for (let c = 0; c < cols; c++) {
+        row.push({
+          mine: false,
+          revealed: false,
+          flagged: false,
+          adjacentMines: 0,
+          row: r,
+          col: c,
+          element: null
+        });
+      }
+      board.push(row);
+    }
   }
 
-  // Place food at random free tile
-  function placeFood() {
-    let newFoodPos;
-    while (true) {
-      newFoodPos = {
-        x: Math.floor(Math.random() * tileCount),
-        y: Math.floor(Math.random() * tileCount)
-      };
-      // Ensure not on snake
-      if (!snake.some(seg => seg.x === newFoodPos.x && seg.y === newFoodPos.y)) {
-        break;
+  // Plant mines randomly after the first click to avoid instant game over
+  function plantMines(initialRow, initialCol) {
+    let planted = 0;
+    while (planted < mineCount) {
+      const r = Math.floor(Math.random() * rows);
+      const c = Math.floor(Math.random() * cols);
+      
+      // Do not plant mine on initial cell or duplicates
+      if (
+        !board[r][c].mine && 
+        !(r === initialRow && c === initialCol) &&
+        !areNeighbors(r, c, initialRow, initialCol)
+      ) {
+        board[r][c].mine = true;
+        planted++;
       }
     }
-    food = newFoodPos;
   }
 
-  function drawRect(x, y, color) {
-    ctx.fillStyle = color;
-    ctx.strokeStyle = '#111';
-    ctx.lineWidth = 1;
-    ctx.fillRect(x * gridSize, y * gridSize, gridSize, gridSize);
-    ctx.strokeRect(x * gridSize, y * gridSize, gridSize, gridSize);
+  // Check if two cells are neighbors or the same cell
+  function areNeighbors(r1, c1, r2, c2) {
+    return Math.abs(r1 - r2) <= 1 && Math.abs(c1 - c2) <= 1;
   }
 
-  function draw() {
-    // Clear
-    ctx.fillStyle = '#121212';
-    ctx.fillRect(0, 0, canvas.width, canvas.height);
-
-    // Draw food
-    drawRect(food.x, food.y, '#e91e63');
-
-    // Draw snake head with gradient
-    let head = snake[0];
-    let gradient = ctx.createLinearGradient(head.x * gridSize, head.y * gridSize, (head.x + 1) * gridSize, (head.y + 1) * gridSize);
-    gradient.addColorStop(0, '#4caf50');
-    gradient.addColorStop(1, '#81c784');
-    ctx.fillStyle = gradient;
-    ctx.fillRect(head.x * gridSize, head.y * gridSize, gridSize, gridSize);
-    ctx.strokeStyle = '#388e3c';
-    ctx.lineWidth = 1.5;
-    ctx.strokeRect(head.x * gridSize, head.y * gridSize, gridSize, gridSize);
-
-    // Draw the rest of the snake body
-    for (let i = 1; i < snake.length; i++) {
-      drawRect(snake[i].x, snake[i].y, '#66bb6a');
-    }
-  }
-
-  function moveSnake() {
-    const newHead = { x: snake[0].x + direction.x, y: snake[0].y + direction.y };
-
-    // Check wall collision
-    if (
-      newHead.x < 0 ||
-      newHead.x >= tileCount ||
-      newHead.y < 0 ||
-      newHead.y >= tileCount
-    ) {
-      return false;
-    }
-
-    // Check self collision
-    if (snake.some(seg => seg.x === newHead.x && seg.y === newHead.y)) {
-      return false;
-    }
-
-    snake.unshift(newHead);
-
-    // Check food collision
-    if (newHead.x === food.x && newHead.y === food.y) {
-      score++;
-      scoreboard.textContent = `Pontuação: ${score}`;
-      placeFood();
-
-      // Increase speed slightly every 5 points, max 20
-      if (score % 5 === 0 && speed < 20) {
-        speed++;
+  // Calculate adjacent mines for all cells
+  function calculateAdjacents() {
+    for (let r = 0; r < rows; r++) {
+      for (let c = 0; c < cols; c++) {
+        if (board[r][c].mine) {
+          board[r][c].adjacentMines = -1;
+          continue;
+        }
+        let count = 0;
+        for (let dr = -1; dr <= 1; dr++) {
+          for (let dc = -1; dc <= 1; dc++) {
+            if (dr === 0 && dc === 0) continue;
+            const nr = r + dr;
+            const nc = c + dc;
+            if (nr >= 0 && nr < rows && nc >= 0 && nc < cols) {
+              if (board[nr][nc].mine) count++;
+            }
+          }
+        }
+        board[r][c].adjacentMines = count;
       }
+    }
+  }
+
+  // Render the board in DOM
+  function renderBoard() {
+    boardElement.innerHTML = '';
+    for (let r = 0; r < rows; r++) {
+      for (let c = 0; c < cols; c++) {
+        const cell = board[r][c];
+        const cellElem = document.createElement('div');
+        cellElem.classList.add('cell');
+        cellElem.setAttribute('role', 'gridcell');
+        cellElem.setAttribute('aria-label', `Linha ${r + 1} Coluna ${c + 1}`);
+        cellElem.dataset.row = r;
+        cellElem.dataset.col = c;
+        cellElem.tabIndex = 0;
+        
+        // Add focus styles for accessibility
+        cellElem.addEventListener('focus', () => {
+          cellElem.style.outline = '2px solid #ffcc00';
+          cellElem.style.outlineOffset = '2px';
+        });
+        cellElem.addEventListener('blur', () => {
+          cellElem.style.outline = 'none';
+        });
+
+        cell.element = cellElem;
+        boardElement.appendChild(cellElem);
+      }
+    }
+  }
+
+  // Reveal cells recursively for empty cells
+  function revealCell(row, col) {
+    const cell = board[row][col];
+    if (cell.revealed || cell.flagged) return;
+
+    cell.revealed = true;
+    cellsRevealed++;
+    cell.element.classList.add('revealed');
+    cell.element.classList.remove('flagged');
+
+    if (cell.mine) {
+      cell.element.classList.add('mine');
+      cell.element.textContent = '💣';
+      gameOver = true;
+      revealAllMines();
+      updateStatus('Você perdeu! 😞 Clique em Reiniciar para jogar novamente.');
+      return;
+    }
+
+    if (cell.adjacentMines > 0) {
+      cell.element.textContent = cell.adjacentMines;
+      cell.element.classList.add(`number-${cell.adjacentMines}`);
     } else {
-      // Remove tail
-      snake.pop();
-    }
-    return true;
-  }
-
-  function gameLoop(timestamp) {
-    if (gameEnded) return;
-
-    if (!lastFrameTime) {
-      lastFrameTime = timestamp;
-      draw();
-      return requestAnimationFrame(gameLoop);
-    }
-
-    const secondsPassed = (timestamp - lastFrameTime) / 1000;
-    if (secondsPassed > 1 / speed) {
-      const alive = moveSnake();
-      if (!alive) {
-        gameOver();
-        return;
+      // Reveal neighbors
+      for (let dr = -1; dr <= 1; dr++) {
+        for (let dc = -1; dc <= 1; dc++) {
+          const nr = row + dr;
+          const nc = col + dc;
+          if (nr >= 0 && nr < rows && nc >= 0 && nc < cols) {
+            if (!(dr === 0 && dc === 0)) {
+              revealCell(nr, nc);
+            }
+          }
+        }
       }
-      draw();
-      lastFrameTime = timestamp;
     }
-    requestAnimationFrame(gameLoop);
+
+    checkWin();
   }
 
-  function gameOver() {
-    gameEnded = true;
-    finalScoreElem.textContent = `Sua pontuação foi: ${score}`;
-    gameOverElem.style.display = 'block';
+  // Reveal all mines after game over
+  function revealAllMines() {
+    for (let r = 0; r < rows; r++) {
+      for (let c = 0; c < cols; c++) {
+        const cell = board[r][c];
+        if (cell.mine && !cell.revealed) {
+          cell.revealed = true;
+          cell.element.classList.add('revealed', 'mine');
+          cell.element.textContent = '💣';
+        }
+      }
+    }
   }
 
-  // Listen keyboard events
-  window.addEventListener('keydown', e => {
-    if (gameEnded) return;
+  // Toggle flag on right click or keyboard key
+  function toggleFlag(row, col) {
+    if (gameOver) return;
+    const cell = board[row][col];
+    if (cell.revealed) return;
 
-    const { x, y } = direction;
-    switch (e.key) {
-      case 'ArrowUp':
-      case 'w':
-      case 'W':
-        if (y !== 1) direction = { x: 0, y: -1 };
-        break;
-      case 'ArrowDown':
-      case 's':
-      case 'S':
-        if (y !== -1) direction = { x: 0, y: 1 };
-        break;
-      case 'ArrowLeft':
-      case 'a':
-      case 'A':
-        if (x !== 1) direction = { x: -1, y: 0 };
-        break;
-      case 'ArrowRight':
-      case 'd':
-      case 'D':
-        if (x !== -1) direction = { x: 1, y: 0 };
-        break;
+    cell.flagged = !cell.flagged;
+    if (cell.flagged) {
+      cell.element.classList.add('flagged');
+      cell.element.textContent = '🚩';
+    } else {
+      cell.element.classList.remove('flagged');
+      cell.element.textContent = '';
+    }
+  }
+
+  // Check if player won
+  function checkWin() {
+    if (gameOver) return;
+    if (cellsRevealed === rows * cols - mineCount) {
+      gameOver = true;
+      updateStatus('Parabéns! Você venceu! 🎉 Clique em Reiniciar para jogar novamente.');
+      revealAllMines();
+    }
+  }
+
+  // Update game status text
+  function updateStatus(message) {
+    statusElement.textContent = message;
+  }
+
+  // Reset the game
+  function resetGame() {
+    gameOver = false;
+    cellsRevealed = 0;
+    updateStatus('');
+    createBoard();
+    renderBoard();
+    firstClick = true;
+  }
+
+  // Track if first click happened to plant mines afterwards
+  let firstClick = true;
+
+  // Handle cell click event
+  function onCellClick(e) {
+    if (gameOver) return;
+
+    const row = parseInt(e.target.dataset.row);
+    const col = parseInt(e.target.dataset.col);
+
+    if (firstClick) {
+      plantMines(row, col);
+      calculateAdjacents();
+      firstClick = false;
+    }
+    revealCell(row, col);
+  }
+
+  // Handle right-click to flag cells and keyboard keys
+  function onCellRightClick(e) {
+    e.preventDefault();
+    if (gameOver) return;
+
+    const row = parseInt(e.target.dataset.row);
+    const col = parseInt(e.target.dataset.col);
+    toggleFlag(row, col);
+  }
+
+  function onCellKeyDown(e) {
+    const row = parseInt(e.target.dataset.row);
+    const col = parseInt(e.target.dataset.col);
+
+    if (gameOver) return;
+
+    if (e.key === ' ' || e.key === 'Enter') {
+      if (!board[row][col].flagged) {
+        e.preventDefault();
+        if (firstClick) {
+          plantMines(row, col);
+          calculateAdjacents();
+          firstClick = false;
+        }
+        revealCell(row, col);
+      }
+    } else if (e.key === 'F' || e.key === 'f') {
+      e.preventDefault();
+      toggleFlag(row, col);
+    }
+  }
+
+  // Add event listeners to the entire board container using event delegation
+  boardElement.addEventListener('click', e => {
+    if (e.target.classList.contains('cell')) {
+      onCellClick(e);
+    }
+  });
+  boardElement.addEventListener('contextmenu', e => {
+    if (e.target.classList.contains('cell')) {
+      onCellRightClick(e);
+    }
+  });
+  boardElement.addEventListener('keydown', e => {
+    if (e.target.classList.contains('cell')) {
+      onCellKeyDown(e);
     }
   });
 
+  // Restart button
   restartBtn.addEventListener('click', () => {
     resetGame();
   });
 
-  function resetGame() {
-    gameEnded = false;
-    score = 0;
-    scoreboard.textContent = `Pontuação: ${score}`;
-    initSnake();
-    placeFood();
-    lastFrameTime = 0;
-    gameOverElem.style.display = 'none';
-    speed = 10;
-    requestAnimationFrame(gameLoop);
-  }
-
-  // Inicialização
+  // Initialize game
   resetGame();
 })();
 </script>
